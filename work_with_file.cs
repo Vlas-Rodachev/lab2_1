@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
@@ -73,19 +72,39 @@ namespace lab2_1
             try
             {
                 StreamReader f = new StreamReader(name);
-                float x, y;
                 string s = f.ReadToEnd();
                 f.Close();
-                if (s == null)
+
+                if (string.IsNullOrEmpty(s))
                 {
                     return 0;
                 }
-                else
+
+                string[] numbersStr = s.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                if (numbersStr.Length == 0)
                 {
-                    x = s.Split('\n').Select(float.Parse).Max();
-                    y = s.Split('\n').Select(float.Parse).Min();
-                    return x * y;
+                    return 0;
                 }
+
+                float max = float.MinValue;
+                float min = float.MaxValue;
+
+                foreach (string numStr in numbersStr)
+                {
+                    if (float.TryParse(numStr, out float num))
+                    {
+                        if (num > max) max = num;
+                        if (num < min) min = num;
+                    }
+                }
+
+                // Проверяем, были ли найдены действительные числа
+                if (max == float.MinValue || min == float.MaxValue)
+                {
+                    return 0;
+                }
+
+                return max * min;
             }
             catch (Exception e)
             {
@@ -107,14 +126,9 @@ namespace lab2_1
                 int count = 0;
 
                 int lenNumbers = strNumbers.Length;
-                int[] numbers = strNumbers
-                    .Select(s => int.TryParse(s, out int num) ? num : (int?)null)
-                    .Where(num => num.HasValue)
-                    .Select(num => num.Value)
-                    .ToArray();
                 for (int i = 0; i < lenNumbers; i++)
                 {
-                    if (numbers[i] % 2 == 1)
+                    if (Int32.Parse(strNumbers[i]) % 2 == 1)
                     {
                         count++;
                     }
@@ -266,12 +280,21 @@ namespace lab2_1
             }
 
             // Поиск подходящих игрушек
-            var suitableToys = toyCollection.Toys.Where(t => t.MinAge >= 4 && t.MaxAge <= 10);
-
             Console.WriteLine("Игрушки, подходящие и для 4-летних, и для 10-летних детей:");
-            foreach (var toy in suitableToys)
+            bool foundAny = false;
+
+            foreach (Toy toy in toyCollection.Toys)
             {
-                Console.WriteLine(toy);
+                if (toy.MinAge >= 4 && toy.MaxAge <= 10)
+                {
+                    Console.WriteLine(toy);
+                    foundAny = true;
+                }
+            }
+
+            if (!foundAny)
+            {
+                Console.WriteLine("Подходящих игрушек не найдено.");
             }
 
             // Чтение из бинарного файла
@@ -423,40 +446,31 @@ namespace lab2_1
             // Все существующие книги
             HashSet<string> allBooks = new HashSet<string>
             {
-            "Война и мир", "Преступление и наказание",
-            "1984", "Мастер и Маргарита", "Гарри Поттер"
+                "Война и мир", "Преступление и наказание",
+                "1984", "Мастер и Маргарита", "Гарри Поттер"
             };
 
             // Книги, прочитанные каждым читателем
             List<HashSet<string>> readers = new List<HashSet<string>>
             {
-            new HashSet<string> { "Война и мир", "1984", "Мастер и Маргарита" },
-            new HashSet<string> { "Преступление и наказание", "1984" },
-            new HashSet<string> { "1984", "Гарри Поттер" }
+                new HashSet<string> { "Война и мир", "1984", "Мастер и Маргарита" },
+                new HashSet<string> { "Преступление и наказание", "1984" },
+                new HashSet<string> { "1984", "Гарри Поттер" }
             };
 
             // 1. Книги, прочитанные ВСЕМИ читателями
-            HashSet<string> readByAll = readers
-                .Skip(1)
-                .Aggregate(
-                    new HashSet<string>(readers.First()),
-                    (common, reader) =>
-                    {
-                        common.IntersectWith(reader);
-                        return common;
-                    }
-                );
+            HashSet<string> readByAll = new HashSet<string>(readers[0]);
+            for (int i = 1; i < readers.Count; i++)
+            {
+                readByAll.IntersectWith(readers[i]);
+            }
 
             // 2. Книги, прочитанные ХОТЯ БЫ ОДНИМ читателем
-            HashSet<string> readBySome = readers
-                .Aggregate(
-                    new HashSet<string>(),
-                    (union, reader) =>
-                    {
-                        union.UnionWith(reader);
-                        return union;
-                    }
-                );
+            HashSet<string> readBySome = new HashSet<string>();
+            foreach (var reader in readers)
+            {
+                readBySome.UnionWith(reader);
+            }
 
             // 3. Книги, НЕ ПРОЧИТАННЫЕ НИ ОДНИМ читателем
             HashSet<string> readByNone = new HashSet<string>(allBooks);
@@ -491,17 +505,17 @@ namespace lab2_1
             HashSet<char> firstWordChars = new HashSet<char>(firstWord);
 
             // Символы, которые есть во всех остальных словах
-            HashSet<char> commonCharsInOtherWords = new HashSet<char>();
+            HashSet<char> commonCharsInOtherWords = null;
 
-            // Первое слово пропускаем, начинаем со второго
-            bool firstIteration = true;
-            foreach (string word in words.Skip(1))
+            // Обрабатываем все слова, кроме первого
+            for (int i = 1; i < words.Length; i++)
             {
+                string word = words[i];
                 HashSet<char> wordChars = new HashSet<char>(word);
-                if (firstIteration)
+
+                if (commonCharsInOtherWords == null)
                 {
-                    commonCharsInOtherWords.UnionWith(wordChars);
-                    firstIteration = false;
+                    commonCharsInOtherWords = new HashSet<char>(wordChars);
                 }
                 else
                 {
@@ -538,6 +552,7 @@ namespace lab2_1
             int N = int.Parse(lines[0]);
             var participants = new List<Participant>();
 
+            // Чтение данных участников
             for (int i = 1; i <= N; i++)
             {
                 string[] parts = lines[i].Split(' ');
@@ -549,52 +564,55 @@ namespace lab2_1
                 participants.Add(new Participant(surname, name, grade, score));
             }
 
-            // Сортируем участников по убыванию баллов
-            var sortedParticipants = participants.OrderByDescending(p => p.Score).ToList();
+            // Сортировка участников по убыванию баллов 
+            participants.Sort((p1, p2) => p2.Score.CompareTo(p1.Score));
 
-            // Определяем количество участников в топ 25%
+            // Определение количества участников в топ 25%
             int top25PercentCount = (int)Math.Ceiling(participants.Count * 0.25);
 
-            // Находим минимальный балл в топ 25%
-            int minScoreInTop25 = sortedParticipants[top25PercentCount - 1].Score;
+            // Нахождение минимального балла в топ 25%
+            int minScoreInTop25 = participants[top25PercentCount - 1].Score;
 
-            // Проверяем, есть ли участники с таким же баллом ниже в списке
+            // Проверка участников с таким же баллом ниже в списке
             int lastPrizeIndex = top25PercentCount - 1;
-            while (lastPrizeIndex + 1 < sortedParticipants.Count &&
-                   sortedParticipants[lastPrizeIndex + 1].Score == minScoreInTop25)
+            while (lastPrizeIndex + 1 < participants.Count &&
+                   participants[lastPrizeIndex + 1].Score == minScoreInTop25)
             {
                 lastPrizeIndex++;
             }
 
-            // Проверяем условие: балл должен быть больше половины максимального (70/2 = 35)
+            // Проверка условия: балл должен быть больше половины максимального (70/2 = 35)
             if (minScoreInTop25 > 35)
             {
-                // Все участники до lastPrizeIndex включительно - призеры
-                var prizeWinners = sortedParticipants.Take(lastPrizeIndex + 1).ToList();
-                int minPrizeScore = prizeWinners.Last().Score;
+                // Создание списка призеров 
+                List<Participant> prizeWinners = new List<Participant>();
+                for (int i = 0; i <= lastPrizeIndex; i++)
+                {
+                    prizeWinners.Add(participants[i]);
+                }
 
-                // Считаем призеров по классам
+                int minPrizeScore = prizeWinners[prizeWinners.Count - 1].Score;
+
+                // Подсчет призеров по классам
                 var gradeCounts = new Dictionary<int, int>
-            {
-                {7, 0},
-                {8, 0},
-                {9, 0},
-                {10, 0},
-                {11, 0}
-            };
+        {
+            {7, 0},
+            {8, 0},
+            {9, 0},
+            {10, 0},
+            {11, 0}
+        };
 
                 foreach (var winner in prizeWinners)
                 {
                     gradeCounts[winner.Grade]++;
                 }
 
-                // Выводим результаты
+                // Вывод результатов
                 Console.WriteLine(minPrizeScore);
                 Console.WriteLine($"{gradeCounts[7]} {gradeCounts[8]} {gradeCounts[9]} {gradeCounts[10]} {gradeCounts[11]}");
             }
-            else
-            {
-            }
+
             return 1;
         }
     }
