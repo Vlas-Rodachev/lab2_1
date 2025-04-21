@@ -11,7 +11,6 @@ namespace lab2_1
 {
     internal class ClassLab7
     {
-        private const string XmlFileName = "toys.xml";
         private string name;
         public ClassLab7()
         {
@@ -581,7 +580,7 @@ namespace lab2_1
                 lastPrizeIndex++;
             }
 
-            // Проверка условия: балл должен быть больше половины максимального (70/2 = 35)
+            // Проверка условия: балл должен быть больше половины максимального
             if (minScoreInTop25 > 35)
             {
                 // Создание списка призеров 
@@ -595,13 +594,13 @@ namespace lab2_1
 
                 // Подсчет призеров по классам
                 var gradeCounts = new Dictionary<int, int>
-        {
-            {7, 0},
-            {8, 0},
-            {9, 0},
-            {10, 0},
-            {11, 0}
-        };
+                {
+                    {7, 0},
+                    {8, 0},
+                    {9, 0},
+                    {10, 0},
+                    {11, 0}
+                };
 
                 foreach (var winner in prizeWinners)
                 {
